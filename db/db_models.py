@@ -1,5 +1,8 @@
+import enum
+
 import sqlalchemy as sq
 from sqlalchemy.orm import declarative_base, relationship
+from enum import Enum
 
 Base = declarative_base()
 
@@ -15,6 +18,16 @@ class Users(Base):
     city = sq.Column(sq.VARCHAR(100), nullable=False)
 
 
+class StatusType(Enum):
+    """
+    Creating a new data type to add variants in blacklist or whitelist.
+    Создаем новый тип данных для добавления варантов в черный или белый список.
+    """
+    INERT = 1
+    LIKE = 2
+    DISLIKE = 3
+
+
 class Variants(Base):
     __tablename__ = 'variants'
 
@@ -24,6 +37,7 @@ class Variants(Base):
     age = sq.Column(sq.Integer, nullable=False)
     sex = sq.Column(sq.VARCHAR(30), nullable=False)
     city = sq.Column(sq.VARCHAR(100), nullable=False)
+    status = sq.Column(sq.Enum(StatusType), nullable=False, default=StatusType.INERT.value)
 
 
 class Photos(Base):
@@ -57,5 +71,4 @@ class VariantsPhoto(Base):
 
 
 def create_tables(engine):
-    Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
