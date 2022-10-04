@@ -35,12 +35,14 @@ def get_user_info(user_id):
               'fields': 'bdate, sex, city'
               }
     response = requests.get(url=URL, params=params).json()
-    # bdate = response.get('response')
-    # дата фиксированная
-    bdate = '01.01.1995'
+    bdate = response.get('response')[0].get('bdate')
     city = response.get('response')[0].get('city').get('id')
     gender = response.get('response')[0].get('sex')
-    user_info = {'age': bdate[-4:], 'city': city, 'gender': gender}
+    birth_year = datetime.strptime(bdate, '%d.%m.%Y')
+    birth_day = datetime.strptime(bdate, '%d.%m.%Y')
+    birth_month = datetime.strptime(bdate, '%d.%m.%Y')
+    user_info = {'b_day': birth_day.strftime('%d'), 'b_month': birth_month.strftime('%m'),
+                 'b_year': birth_year.strftime('%Y'), 'city': city, 'gender': gender}
     return user_info
 
 # Подбираем пары изходя из ранее полученных данных
@@ -53,10 +55,13 @@ def user_search():
               'has_foto': 1,
               'city': get_user_info(event.user_id).get('city'),
               'sex': 1,
-              'birth_year': get_user_info(event.user_id).get('age')
+              'birth_day': get_user_info(event.user_id).get('b_day'),
+              'birth_month': get_user_info(event.user_id).get('b_month'),
+              'birth_year': get_user_info(event.user_id).get('b_year')
               }
     response = requests.get(url=URL, params=params).json()
     return response.get('response')
+
 
 
 # Получаем список фото пары в формате (количество лайков, id фото, url фото)
