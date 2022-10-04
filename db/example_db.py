@@ -1,4 +1,4 @@
-from db.db_func import DbVkTinder
+from db_func import DbVkTinder
 
 
 if __name__ == '__main__':

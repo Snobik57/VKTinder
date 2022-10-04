@@ -1,5 +1,3 @@
-import enum
-
 import sqlalchemy as sq
 from sqlalchemy.orm import declarative_base, relationship
 from enum import Enum
@@ -40,14 +38,6 @@ class Variants(Base):
     status = sq.Column(sq.Enum(StatusType), nullable=False, default=StatusType.INERT.value)
 
 
-class Photos(Base):
-    __tablename__ = 'photos'
-
-    id = sq.Column(sq.Integer, primary_key=True)
-    link = sq.Column(sq.TEXT, nullable=False)
-    size = sq.Column(sq.VARCHAR(10))
-
-
 class UsersVariants(Base):
     __tablename__ = 'users_variants'
 
@@ -57,17 +47,6 @@ class UsersVariants(Base):
 
     user = relationship('Users', backref='users_variants')
     variant = relationship('Variants', backref='users_variants')
-
-
-class VariantsPhoto(Base):
-    __tablename__ = 'variants_photos'
-
-    id = sq.Column(sq.Integer, primary_key=True)
-    variant_id = sq.Column(sq.Integer, sq.ForeignKey('variants.id'), nullable=False)
-    photo_id = sq.Column(sq.Integer, sq.ForeignKey('photos.id'), nullable=False)
-
-    variant = relationship('Variants', backref='variants_photos')
-    photo = relationship('Photos', backref='variants_photos')
 
 
 def create_tables(engine):

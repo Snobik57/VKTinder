@@ -1,8 +1,8 @@
 import sqlalchemy as sq
-import db.config as c
+import curse_project_VKTinder.db.config as c
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_utils import database_exists, create_database
-from db.db_models import Users, Variants, UsersVariants, Photos, VariantsPhoto, create_tables
+from curse_project_VKTinder.db.db_models import Users, Variants, UsersVariants, create_tables
 
 name_db = 'vk_tinder'
 DSN = f'postgresql://{c.USER}:{c.PASSWORD}@{c.HOST}:{c.PORT}/{name_db}'
@@ -85,7 +85,6 @@ class DbVkTinder:
                 self.session.add(new_Users_Variants)
                 self.session.commit()
 
-
         return True
 
     def get_all_variants_for_user(self, id_vk):
@@ -94,7 +93,7 @@ class DbVkTinder:
             .join(Variants, UsersVariants.id_variant == Variants.id).filter(Users.id_vk == id_vk)
         for res in q.all():
             for var in res.users_variants:
-                    list_id.append(var.variant.id_vk)
+                list_id.append(var.variant.id_vk)
 
         return list_id
 
