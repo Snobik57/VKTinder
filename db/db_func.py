@@ -1,9 +1,9 @@
 import sqlalchemy as sq
-import curse_project_VKTinder.db.config as c
+import db.config as c
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import func
 from sqlalchemy_utils import database_exists, create_database
-from curse_project_VKTinder.db.db_models import Users, Variants, UsersVariants, create_tables
+from db.db_models import Users, Variants, UsersVariants, create_tables
 
 name_db = 'vk_tinder'
 DSN = f'postgresql://{c.USER}:{c.PASSWORD}@{c.HOST}:{c.PORT}/{name_db}'
