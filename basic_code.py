@@ -6,8 +6,13 @@ from random import randrange
 from datetime import datetime
 from db.db_func import DbVkTinder
 
-token = 'vk1.a.ou1fBJqpxvKat-yWw0ylJQWbYMV5t2LrIPPI_zHvgCW2wGEFmCEVs1-MvxIUq_YW0_BXRiTtSwJyuZvkFpBqXe7miNZIkbwN4xrs1nhY7hAx4pvLPHxKM7yJNM2lwAVfY8EifGObHvYzuY-4dkzBAKagnCxqsuPv_HUyrEXfF3tYOZjBaRG_aMTOiIk8nsl_'
-VKtoken = 'vk1.a.ZFlUIyFDWCMDuOQJTnkdvb8dBTrKBLXw2TCcQus72RMdsBztc-7LxMVMh8KXmOr5NI_JiROmckWcROMmPtQAH7ZYkRBpNPvqTu_YDPaIvWUue81J2QLFcV1jltMtgUDkOCOsdYKHiS-PmtVtyw3UrrBdDT0ci4c3_suWY56EJUl5wcO5G8aemVuFznhWGPBL'
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+token = os.getenv('token')
+VKtoken = os.getenv('VKtoken')
 
 vk = vk_api.VkApi(token=token)
 longpoll = VkLongPoll(vk)
@@ -108,10 +113,10 @@ for event in longpoll.listen():
                 date = int(str(datetime.now())[:4]) - int(request)
                 if not db_vk.user_in_db(event.user_id):
                     db_vk.add_new_user(event.user_id,
-                                       f"{user_info['first_name']} {user_info['last_name']}",
-                                       date,
-                                       user_info['city'],
-                                       user_info['gender'])
+                                       name=f"{user_info['first_name']} {user_info['last_name']}",
+                                       age=date,
+                                       sex=user_info['gender'],
+                                       city=user_info['city'])
                 keyboard = VkKeyboard(one_time=True)
                 keyboard.add_button("Найти Любовь", VkKeyboardColor.POSITIVE)
                 write_msg(event.user_id,
