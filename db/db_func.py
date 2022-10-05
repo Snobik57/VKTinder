@@ -1,6 +1,7 @@
 import sqlalchemy as sq
 import curse_project_VKTinder.db.config as c
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import func
 from sqlalchemy_utils import database_exists, create_database
 from curse_project_VKTinder.db.db_models import Users, Variants, UsersVariants, create_tables
 
@@ -43,49 +44,49 @@ class DbVkTinder:
 
         return result
 
-    def add_variants_for_user(self, id_vk, list_variants):
+    def get_age_user(self, id_vk):
+        q = self.session.query(Users).filter(Users.id_vk == id_vk)
+        result = None
+        for res in q.all():
+            result = res.age
+            break
 
-        user_id = self.get_id_user(id_vk)
-        if user_id is None:
-            return False
+        return result
 
-        list_id_vk = []
-        for variant in list_variants:
-            list_id_vk.append(variant['id_vk'])
-
-        list_id = []
-        q = self.session.query(Variants).filter(Variants.id_vk.in_(list_id_vk))
-        for variant in q.all():
-            list_id.append({'id_vk': variant.id_vk,
-                            'id': variant.id})
-            list_id_vk.remove(variant.id_vk)
-
-        # Добавление новых объектов в variants
-        for variant in list_variants:
-            if variant['id_vk'] in list_id_vk:
-                new_variant = Variants(id_vk=variant['id_vk'], name=variant['name'], age=variant['age'],
-                                       sex=variant['sex'], city=variant['city'], status='INERT')
-
-                self.session.add(new_variant)
-                self.session.commit()
-
-                list_id.append({'id_vk': new_variant.id_vk,
-                                'id': new_variant.id})
-
-        # Добавление связей
-        for dict_id in list_id:
-            q = self.session.query(UsersVariants).filter(UsersVariants.id_user == user_id).filter(
-                                                         UsersVariants.id_variant == dict_id['id'])
-            empty_record = True
-            for res in q.all():
-                empty_record = False
-
-            if empty_record:
-                new_Users_Variants = UsersVariants(id_user=user_id, id_variant=dict_id['id'])
-                self.session.add(new_Users_Variants)
-                self.session.commit()
+    def add_new_variants(self, user_id_vk, status="INERT", **kwargs,):
+        user_id = self.get_id_user(user_id_vk)
+        new_variants = Variants(id_vk=kwargs['id_vk'],
+                                name=kwargs['name'],
+                                age=kwargs['age'],
+                                sex=kwargs['sex'],
+                                city=kwargs['city'],
+                                )
+        self.session.add(new_variants)
+        q = self.session.query(Variants).filter(Variants.id_vk == kwargs['id_vk'])
+        id = None
+        for row in q:
+            id = row.id
+            break
+        new_users_variants = UsersVariants(id_user=user_id, id_variant=id, status=status)
+        self.session.add(new_users_variants)
+        self.session.commit()
 
         return True
+
+    def new_status_for_variants(self, user_id_vk, variants_id, status):
+        query_id_user = self.session.query(Users.id).where(Users.id_vk == user_id_vk).one()
+
+        query = self.session.query(UsersVariants)
+        query = query.filter(UsersVariants.id_user == query_id_user[0]).\
+            filter(UsersVariants.id_variant == variants_id).\
+            update({'status': status})
+        self.session.commit()
+
+    def count_new_variant(self, user_id_vk):
+        query_max = self.session.query(func.max(UsersVariants.id_variant)).join(Users)
+        query_max = query_max.where(Users.id_vk == user_id_vk).one()
+
+        return query_max[0]
 
     def get_all_variants_for_user(self, id_vk):
         list_id = []
