@@ -1,12 +1,20 @@
 import sqlalchemy as sq
-import db.config as c
+import os
+from dotenv import load_dotenv
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import func
 from sqlalchemy_utils import database_exists, create_database
-from db.db_models import Users, Variants, UsersVariants, create_tables
+from curse_project_VKTinder.db.db_models import Users, Variants, UsersVariants, create_tables
+
+load_dotenv()
+
+USER = os.getenv('USER_')
+PASSWORD = os.getenv('PASSWORD')
+HOST = os.getenv('HOST')
+PORT = os.getenv('PORT')
 
 name_db = 'vk_tinder'
-DSN = f'postgresql://{c.USER}:{c.PASSWORD}@{c.HOST}:{c.PORT}/{name_db}'
+DSN = f'postgresql://{USER}:{PASSWORD}@{HOST}:{PORT}/{name_db}'
 
 
 class DbVkTinder:
@@ -169,25 +177,27 @@ class DbVkTinder:
 
         return query_max[0]
 
-    def get_all_variants_for_user(self, id_vk: str) -> list:
+    def get_all_variants_for_user(self, id_vk: str, status: str) -> list:
         """
-        Метод для нахождения всех добавленных вариантов в UsersVariants для опеределенного пользователя
+        Метод для нахождения вариантов со статусом `status` в UsersVariants для опеределенного пользователя
 
         :params id_vk: str - ID пользователя VK
+        :params status: str - Статус варианта (пользователя VK)
 
-        q - SELECT запрос для получения всех записей для пользователя VK, по его ID.
-        list_id - Список наполненный всеми записями Variants.id_vk для конкретного пользователя
+        q - SELECT запрос для получения записей для пользователя VK, по его ID, со статусом переданным в параметрах.
+        list_variants - Список наполненный всеми записями Variants.id_vk для конкретного пользователя
 
-        :return: list - list_id
+        :return: list - ["variant_name -  https://vk.com/id{variant_id}"]
         """
-        list_id = []
-        q = self.session.query(Users).join(UsersVariants.user)\
-            .join(Variants, UsersVariants.id_variant == Variants.id).filter(Users.id_vk == id_vk)
-        for res in q.all():
+        list_variants = []
+        q = self.session.query(Variants).join(UsersVariants).join(Users).filter(Users.id_vk == id_vk).\
+            where(UsersVariants.status == status)
+        for res in q:
             for var in res.users_variants:
-                list_id.append(var.variant.id_vk)
+                variant_info = f"{var.variant.name} - https://vk.com/id{var.variant.id_vk} "
+                list_variants.append(variant_info)
 
-        return list_id
+        return list_variants
 
     def variant_in_db_for_user(self, id_vk: str, id_vk_variant: str) -> bool:
         """

@@ -12,13 +12,16 @@ VKtoken = os.getenv('VKtoken')
 vk = vk_api.VkApi(token=token)
 
 
-def write_msg(user_vk_id: str, message: str, attachment=None, keyboard=None) -> None:
+def write_msg(user_vk_id: str, message: str, attachment=None, keyboard=None) -> int:
     """
     Функция отправляет сообщение через VK API указанному пользователю VK
+
     params: user_id: str - ID пользователя VK
     params: message: str - Сообщение, которое необходимо отправить.
     params: attachment: str - Необязательный параметр, отправляет фотографии указанные пользователем
     params: keyboard: str - Необязательный параметр, задействует метод VK API и отправляет кнопки указанные пользователем
+
+    :return: int Вовзращает ID сообщения
     """
     params = {
         'user_id': user_vk_id,
@@ -29,7 +32,9 @@ def write_msg(user_vk_id: str, message: str, attachment=None, keyboard=None) -> 
         params['attachment'] = attachment
     if keyboard is not None:
         params['keyboard'] = keyboard.get_keyboard()
-    vk.method('messages.send', params)
+    response = vk.method('messages.send', params)
+
+    return response
 
 
 def get_user_info(user_vk_id: str) -> dict:
@@ -121,7 +126,10 @@ def get_user_photos(user_vk_id: str) -> list:
                     likes_ids = {'like': (photos.get('likes').get('count')),
                                  'photo_id': (photos.get('id')),
                                  'photo_url': (photo.get('url'))}
-                    likes_ids_list.append(likes_ids)
+                    if len(likes_ids_list) < 3:
+                        likes_ids_list.append(likes_ids)
+                    else:
+                        break
         return likes_ids_list
     except AttributeError:
         return likes_ids_list
