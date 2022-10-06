@@ -12,9 +12,16 @@ VKtoken = os.getenv('VKtoken')
 vk = vk_api.VkApi(token=token)
 
 
-def write_msg(user_id, message, attachment=None, keyboard=None):
+def write_msg(user_vk_id: str, message: str, attachment=None, keyboard=None) -> None:
+    """
+    Функция отправляет сообщение через VK API указанному пользователю VK
+    params: user_id: str - ID пользователя VK
+    params: message: str - Сообщение, которое необходимо отправить.
+    params: attachment: str - Необязательный параметр, отправляет фотографии указанные пользователем
+    params: keyboard: str - Необязательный параметр, задействует метод VK API и отправляет кнопки указанные пользователем
+    """
     params = {
-        'user_id': user_id,
+        'user_id': user_vk_id,
         'message': message,
         'random_id': randrange(10 ** 7),
     }
@@ -25,17 +32,22 @@ def write_msg(user_id, message, attachment=None, keyboard=None):
     vk.method('messages.send', params)
 
 
-# Получаем данные пользователя, который общается с ботом (год рождения, пол, город)
-def get_user_info(user_id):
-    ID = user_id
-    URL = 'https://api.vk.com/method/users.get'
-    params = {'user_ids': f'{ID}',
+def get_user_info(user_vk_id: str) -> dict:
+    """
+    Функция позволяет получить данные пользователя VK, используя метод VK API users.get. (имя, фамилия, пол, город).
+    :params user_vk_id: str - ID пользователя VK
+
+    :return: dict - {'vk_id': int, 'first_name': srt, 'last_name': str, 'sex': int
+                    'city_id': int, 'city':  str ,'birth_date': str}
+    """
+    url = 'https://api.vk.com/method/users.get'
+    params = {'user_ids': f'{user_vk_id}',
               'access_token': token,
               'v': '5.131',
               'fields': 'bdate, sex, city'
               }
 
-    response = requests.get(url=URL, params=params).json()
+    response = requests.get(url=url, params=params).json()
     first_name = response.get('response')[0].get('first_name')
     last_name = response.get('response')[0].get('last_name')
     city = response.get('response')[0].get('city').get('id')
@@ -48,8 +60,20 @@ def get_user_info(user_id):
     return user_info
 
 
-# Подбираем пары изходя из ранее полученных данных
-def user_search(user_vk_id, age_from=None, age_to=None):
+def user_search(user_vk_id: str, age_from=None, age_to=None) -> list:
+    """
+    Функция позволяет получить список словарей с данными пользователей по указанным параметрам, использу метод
+    VK API users.search. (имя, фамилия, город, пол, дата рождения)
+    :params user_vk_id: str - ID пользователя VK
+    :params age_from: str or int - Необязательный параметр, с какого возраста начать поиск
+    :params age_to: str or int - Необязательный параметр, по какой возраст начать поиск
+
+    :return: [
+                'count': count,
+                'items': {'vk_id': int, 'first_name': srt, 'last_name': str, 'sex': int
+                             'city_id': int, 'city':  str ,'birth_date': str, 'age': int , photos": str}
+            ]
+    """
     info_user = get_user_info(user_vk_id)
     if info_user.get('sex') == 1:
         sex = 2
@@ -72,18 +96,23 @@ def user_search(user_vk_id, age_from=None, age_to=None):
     return response.get('response')
 
 
-# Получаем список фото пары в формате (количество лайков, id фото, url фото)
-def get_user_photos(user_id):
-    ID = user_id
-    URL = 'https://api.vk.com/method/photos.get'
-    params = {'owner_id': f'{ID}',
+def get_user_photos(user_vk_id: str) -> list:
+    """
+    Функция позволяет получить фотографии указанного профиля VK, с помощью метода VK API photos.get
+    (количество лайков, ID фото, URL фото)
+    :params user_vk_id: str - ID пользователя VK
+
+    :return: list - [{'like': like, 'photo_id': photo_id, 'photo_url': photo_url}]
+    """
+    url = 'https://api.vk.com/method/photos.get'
+    params = {'owner_id': f'{user_vk_id}',
               'access_token': VKtoken,
               'v': '5.131',
               'album_id': 'profile',
               'rev': 0,
               'extended': 1,
               }
-    response = requests.get(url=URL, params=params).json()
+    response = requests.get(url=url, params=params).json()
     likes_ids_list = []
     try:
         for photos in response.get('response').get('items'):

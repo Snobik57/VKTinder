@@ -6,6 +6,7 @@ Base = declarative_base()
 
 
 class Users(Base):
+    """Дочерний класс от declarative_base. Хранит сведения о пользователе VK"""
     __tablename__ = 'users'
 
     id = sq.Column(sq.Integer, primary_key=True)
@@ -27,6 +28,7 @@ class StatusType(Enum):
 
 
 class Variants(Base):
+    """Дочерний класс от declarative_base. Хранит сведения о варианте найденом на платформе VK"""
     __tablename__ = 'variants'
 
     id = sq.Column(sq.Integer, primary_key=True)
@@ -38,6 +40,10 @@ class Variants(Base):
 
 
 class UsersVariants(Base):
+    """
+    Дочерний класс от declarative_base. Хранит сведения о Users и Variants
+    Необходим для создание связи "многие-ко-многим"
+    """
     __tablename__ = 'users_variants'
 
     id = sq.Column(sq.Integer, primary_key=True)
@@ -50,6 +56,7 @@ class UsersVariants(Base):
 
 
 def create_tables(engine):
+    """Функция для создания моделей в БД"""
     Base.metadata.create_all(engine)
 
 
