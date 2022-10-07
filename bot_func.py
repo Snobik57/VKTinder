@@ -1,6 +1,7 @@
 import vk_api
 import os
 import requests
+from vk_api.keyboard import VkKeyboard
 from dotenv import load_dotenv
 from random import randrange
 
@@ -12,35 +13,41 @@ VKtoken = os.getenv('VKtoken')
 vk = vk_api.VkApi(token=token)
 
 
-def write_msg(user_vk_id: str, message: str, attachment=None, keyboard=None) -> int:
+def write_msg(user_vk_id: str or int, message: str, attachment=None, keyboard=None) -> dict:
     """
     Функция отправляет сообщение через VK API указанному пользователю VK
 
-    params: user_id: str - ID пользователя VK
+    params: user_id: str or int - ID пользователя VK
     params: message: str - Сообщение, которое необходимо отправить.
     params: attachment: str - Необязательный параметр, отправляет фотографии указанные пользователем
     params: keyboard: str - Необязательный параметр, задействует метод VK API и отправляет кнопки указанные пользователем
 
-    :return: int Вовзращает ID сообщения
+    :return: dict: если запрос успешный - {'result': True, 'id_msg': response}
+                   если запрос провальный - {'result': False, 'error': response}
     """
     params = {
         'user_id': user_vk_id,
         'message': message,
         'random_id': randrange(10 ** 7),
     }
-    if attachment is not None:
+
+    if attachment is not None and isinstance(attachment, str):
         params['attachment'] = attachment
-    if keyboard is not None:
+    if keyboard is not None and isinstance(keyboard, vk_api.keyboard.VkKeyboard):
         params['keyboard'] = keyboard.get_keyboard()
+
     response = vk.method('messages.send', params)
 
-    return response
+    if isinstance(response, int):
+        return {'result': True, 'id_msg': response}
+    else:
+        return {'result': False, 'error': response}
 
 
-def get_user_info(user_vk_id: str) -> dict:
+def get_user_info(user_vk_id: str or int) -> dict:
     """
     Функция позволяет получить данные пользователя VK, используя метод VK API users.get. (имя, фамилия, пол, город).
-    :params user_vk_id: str - ID пользователя VK
+    :params user_vk_id: str or int - ID пользователя VK
 
     :return: dict - {'vk_id': int, 'first_name': srt, 'last_name': str, 'sex': int
                     'city_id': int, 'city':  str ,'birth_date': str}
@@ -55,7 +62,9 @@ def get_user_info(user_vk_id: str) -> dict:
     response = requests.get(url=url, params=params).json()
     first_name = response.get('response')[0].get('first_name')
     last_name = response.get('response')[0].get('last_name')
-    city = response.get('response')[0].get('city').get('id')
+    city = response.get('response')[0].get('city')
+    if city is not None:
+        city = city.get('id')
     gender = response.get('response')[0].get('sex')
 
     user_info = {'first_name': first_name,
@@ -65,11 +74,11 @@ def get_user_info(user_vk_id: str) -> dict:
     return user_info
 
 
-def user_search(user_vk_id: str, age_from=None, age_to=None) -> list:
+def user_search(user_vk_id: str or int, age_from=None, age_to=None) -> list:
     """
     Функция позволяет получить список словарей с данными пользователей по указанным параметрам, использу метод
     VK API users.search. (имя, фамилия, город, пол, дата рождения)
-    :params user_vk_id: str - ID пользователя VK
+    :params user_vk_id: str or int - ID пользователя VK
     :params age_from: str or int - Необязательный параметр, с какого возраста начать поиск
     :params age_to: str or int - Необязательный параметр, по какой возраст начать поиск
 
@@ -101,11 +110,11 @@ def user_search(user_vk_id: str, age_from=None, age_to=None) -> list:
     return response.get('response')
 
 
-def get_user_photos(user_vk_id: str) -> list:
+def get_user_photos(user_vk_id: str or int) -> list:
     """
     Функция позволяет получить фотографии указанного профиля VK, с помощью метода VK API photos.get
     (количество лайков, ID фото, URL фото)
-    :params user_vk_id: str - ID пользователя VK
+    :params user_vk_id: str or int - ID пользователя VK
 
     :return: list - [{'like': like, 'photo_id': photo_id, 'photo_url': photo_url}]
     """
@@ -130,10 +139,12 @@ def get_user_photos(user_vk_id: str) -> list:
                         likes_ids_list.append(likes_ids)
                     else:
                         break
-        return likes_ids_list
+        return sorted(likes_ids_list, key=lambda x: x.get('like'), reverse=True)
     except AttributeError:
         return likes_ids_list
 
 
 if __name__ == "__main__":
     pass
+
+

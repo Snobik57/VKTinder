@@ -1,10 +1,74 @@
-import sqlalchemy as sq
 import os
+
+import sqlalchemy as sq
+
 from dotenv import load_dotenv
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import declarative_base, relationship, sessionmaker
+from enum import Enum
 from sqlalchemy import func
 from sqlalchemy_utils import database_exists, create_database
-from curse_project_VKTinder.db.db_models import Users, Variants, UsersVariants, create_tables
+
+
+""""Этот скрипт предназначен для создания БД для тестирования. Не имеет целей в бизнес-логике проекта"""
+
+
+Base = declarative_base()
+
+
+class Users(Base):
+    """Дочерний класс от declarative_base. Хранит сведения о пользователе VK"""
+    __tablename__ = 'users'
+
+    id = sq.Column(sq.Integer, primary_key=True)
+    id_vk = sq.Column(sq.Integer, nullable=False)
+    name = sq.Column(sq.VARCHAR(100))
+    age = sq.Column(sq.Integer, nullable=False)
+    sex = sq.Column(sq.VARCHAR(30), nullable=False)
+    city = sq.Column(sq.VARCHAR(100), nullable=False)
+
+
+class StatusType(Enum):
+    """
+    Creating a new data type to add variants in blacklist or whitelist.
+    Создаем новый тип данных для добавления варантов в черный или белый список.
+    """
+    INERT = 1
+    LIKE = 2
+    DISLIKE = 3
+
+
+class Variants(Base):
+    """Дочерний класс от declarative_base. Хранит сведения о варианте найденом на платформе VK"""
+    __tablename__ = 'variants'
+
+    id = sq.Column(sq.Integer, primary_key=True)
+    id_vk = sq.Column(sq.Integer, nullable=False)
+    name = sq.Column(sq.VARCHAR(100))
+    age = sq.Column(sq.VARCHAR(20), nullable=False)
+    sex = sq.Column(sq.VARCHAR(30), nullable=False)
+    city = sq.Column(sq.VARCHAR(100), nullable=False)
+
+
+class UsersVariants(Base):
+    """
+    Дочерний класс от declarative_base. Хранит сведения о Users и Variants
+    Необходим для создание связи "многие-ко-многим"
+    """
+    __tablename__ = 'users_variants'
+
+    id = sq.Column(sq.Integer, primary_key=True)
+    id_user = sq.Column(sq.Integer, sq.ForeignKey('users.id'), nullable=False)
+    id_variant = sq.Column(sq.Integer, sq.ForeignKey('variants.id'), nullable=False)
+    status = sq.Column(sq.Enum(StatusType), nullable=False, default=StatusType.INERT.value)
+
+    user = relationship('Users', backref='users_variants')
+    variant = relationship('Variants', backref='users_variants')
+
+
+def create_tables(engine):
+    """Функция для создания моделей в БД"""
+    Base.metadata.create_all(engine)
+
 
 load_dotenv()
 
@@ -13,7 +77,7 @@ PASSWORD = os.getenv('PASSWORD')
 HOST = os.getenv('HOST')
 PORT = os.getenv('PORT')
 
-name_db = 'vk_tinder'
+name_db = 'vk_tinder_for_test'
 DSN = f'postgresql://{USER}:{PASSWORD}@{HOST}:{PORT}/{name_db}'
 
 
@@ -53,13 +117,12 @@ class DbVkTinder:
         self.session.add(new_user)
         self.session.commit()
 
-
         return True
 
-    def user_in_db(self, id_vk: str) -> bool:
+    def user_in_db(self, id_vk: str or int) -> bool:
         """
         Метод класса позволяет проверить существует ли данные об этом пользователе VK, по его ID
-        :params id_vk: str - ID пользователя VK
+        :params id_vk: str or int - ID пользователя VK
 
         :return: bool - True если данный id_vk найдет в таблице Users
                         False если данный id_vk не найден в таблице Users
@@ -71,10 +134,10 @@ class DbVkTinder:
             break
         return result
 
-    def get_id_user(self, id_vk: str) -> int:
+    def get_id_user(self, id_vk: str or int) -> int:
         """
         Метод класса позволяет получить Users.id по ID VK пользователя
-        :params id_vk: str - ID пользователя VK
+        :params id_vk: str or int - ID пользователя VK
 
         :return: int - Если данный ID пользователя обнаружен в БД
                  None - Если данный ID пользователя не обнаружен в БД
@@ -87,10 +150,10 @@ class DbVkTinder:
 
         return result
 
-    def get_age_user(self, id_vk: str) -> str:
+    def get_age_user(self, id_vk: str or int) -> str:
         """
         Метод класса позволяет получить Users.age по ID VK пользователя
-        :params id_vk: str - ID пользователя VK
+        :params id_vk: str or int - ID пользователя VK
 
         :return: str - Если данный ID пользователя обнаружен в БД
                  None - Если данный ID пользователя не обнаружен в БД
@@ -103,11 +166,11 @@ class DbVkTinder:
 
         return result
 
-    def add_new_variants(self, user_id_vk: str, status="INERT", **kwargs) -> bool:
+    def add_new_variants(self, user_id_vk: str or int, status="INERT", **kwargs) -> bool:
         """
         Метод класса позволяет добавить данные о новом варианте в таблицу Variants
         и создать связь в таблиые UsersVariants
-        :params user_id_vk: str - ID пользователя VK
+        :params user_id_vk: str or int - ID пользователя VK
         :params status: str - Необязятельный параметр, для добавления статуса варианта в UsersVariants
         :kwargs: dict - Ожидает словарь со следующими ключами и значениями:
 
@@ -144,12 +207,12 @@ class DbVkTinder:
 
         return True
 
-    def new_status_for_variants(self, user_id_vk: str, variants_id: str, status: str) -> None:
+    def new_status_for_variants(self, user_id_vk: str or int, variants_id: str or int, status: str) -> bool:
         """
         Метод класса позволяющий обновить статус варианта в таблице UsersVariants
 
-        :params user_id_vk: str - ID пользователя VK
-        :params variants_id: str - ID пользователя VK
+        :params user_id_vk: str or int - ID пользователя VK
+        :params variants_id: str or int - ID пользователя VK
         :params status: str - тип данных для БД наследованный от класса Enum: INERT = 1
                                                                               LIKE = 2
                                                                               DISLIKE = 3
@@ -165,11 +228,13 @@ class DbVkTinder:
             update({'status': status})
         self.session.commit()
 
-    def count_new_variant(self, user_id_vk: str) -> int:
+        return True
+
+    def count_new_variant(self, user_id_vk: str or int) -> int:
         """
         Метод класса для нахождения новоой записи в таблице UsersVariants
 
-        :params user_id_vk: str - ID пользователя VK
+        :params user_id_vk: str or int - ID пользователя VK
 
         :return: int - UsersVariants.id_variant
         """
@@ -178,11 +243,11 @@ class DbVkTinder:
 
         return query_max[0]
 
-    def get_all_variants_for_user(self, id_vk: str, status: str) -> list:
+    def get_all_variants_for_user(self, id_vk: str or int, status: str) -> list:
         """
         Метод для нахождения вариантов со статусом `status` в UsersVariants для опеределенного пользователя
 
-        :params id_vk: str - ID пользователя VK
+        :params id_vk: str or int - ID пользователя VK
         :params status: str - Статус варианта (пользователя VK)
 
         q - SELECT запрос для получения записей для пользователя VK, по его ID, со статусом переданным в параметрах.
@@ -200,12 +265,12 @@ class DbVkTinder:
 
         return list_variants
 
-    def variant_in_db_for_user(self, id_vk: str, id_vk_variant: str) -> bool:
+    def variant_in_db_for_user(self, id_vk: str or int, id_vk_variant: str or int) -> bool:
         """
         Метод для нахождения указанного варината для конкретного пользователя.
 
-        :params id_vk: str - ID пользователя VK
-        :params id_vk_variant: str - ID пользователя VK
+        :params id_vk: str or int - ID пользователя VK
+        :params id_vk_variant: str or int - ID пользователя VK
 
         q - SELECT запрос для получения записи из таблиц Users и Variants о указанном
         варианте для указанного пользователя.

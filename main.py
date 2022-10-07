@@ -54,12 +54,15 @@ def main():
                         photo = [x['photo_id'] for x in get_user_photos(variant_id)]
                         attachment_photo = [f'photo{variant_id}_{x}' for x in photo]
                         keyboard = VkKeyboard()
-                        buttons = ['Дизлайк', 'Лайк', 'Далее', f'Вывести понравившихся']
+
+                        buttons = ['Дизлайк', 'Лайк', 'Далее']
                         button_colors = [VkKeyboardColor.NEGATIVE, VkKeyboardColor.POSITIVE,
-                                         VkKeyboardColor.PRIMARY, VkKeyboardColor.SECONDARY]
+                                         VkKeyboardColor.PRIMARY]
 
                         for button, button_collor in zip(buttons, button_colors):
                             keyboard.add_button(button, button_collor)
+                        keyboard.add_line()
+                        keyboard.add_button(f'Вывести понравившихся', VkKeyboardColor.SECONDARY)
                         db_vk.add_new_variants(event.user_id,
                                                id_vk=variant_id,
                                                name=f"{variant.get('first_name')} {variant.get('last_name')}",
@@ -116,6 +119,7 @@ def main():
                 list_like_variants = db_vk.get_all_variants_for_user(event.user_id, 'LIKE')
                 sting_like_variant = "\n".join(list_like_variants)
                 write_msg(event.user_id, f"""Понравившиеся:\n{sting_like_variant}""")
+
             elif request == "пока":
                 write_msg(event.user_id, f"До новых встреч!\n для моей активации напишите: `привет`")
 
