@@ -1,20 +1,7 @@
-import vk_api
-import os
-from vk_api.longpoll import VkLongPoll, VkEventType
+from vk_api.longpoll import VkEventType
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from datetime import datetime
-from db.db_func import DbVkTinder
-from dotenv import load_dotenv
-from bot_func import user_search, get_user_info, get_user_photos, write_msg
-
-load_dotenv()
-
-token = os.getenv('token')
-VKtoken = os.getenv('VKtoken')
-
-vk = vk_api.VkApi(token=token)
-longpoll = VkLongPoll(vk)
-db_vk = DbVkTinder()
+from bot_func import user_search, get_user_info, get_user_photos, longpoll, db_vk, write_msg
 
 
 def main():

@@ -1,9 +1,12 @@
-import vk_api
 import os
 import requests
-from vk_api.keyboard import VkKeyboard
-from dotenv import load_dotenv
+import vk_api
+import vk_api.keyboard
 from random import randrange
+from dotenv import load_dotenv
+from vk_api.longpoll import VkLongPoll
+from db.db_func import DbVkTinder
+
 
 load_dotenv()
 
@@ -11,6 +14,8 @@ token = os.getenv('token')
 VKtoken = os.getenv('VKtoken')
 
 vk = vk_api.VkApi(token=token)
+longpoll = VkLongPoll(vk)
+db_vk = DbVkTinder()
 
 
 def write_msg(user_vk_id: str or int, message: str, attachment=None, keyboard=None) -> dict:
@@ -38,10 +43,7 @@ def write_msg(user_vk_id: str or int, message: str, attachment=None, keyboard=No
 
     response = vk.method('messages.send', params)
 
-    if isinstance(response, int):
-        return {'result': True, 'id_msg': response}
-    else:
-        return {'result': False, 'error': response}
+    return {'result': isinstance(response, int), 'id_msg': response}
 
 
 def get_user_info(user_vk_id: str or int) -> dict:
@@ -128,7 +130,7 @@ def get_user_photos(user_vk_id: str or int) -> list:
               }
     response = requests.get(url=url, params=params).json()
     likes_ids_list = []
-    try:
+    if response.get('response').get('items') is not None:
         for photos in response.get('response').get('items'):
             for photo in photos.get('sizes'):
                 if 'm' in photo.get('type'):
@@ -140,7 +142,7 @@ def get_user_photos(user_vk_id: str or int) -> list:
                     else:
                         break
         return sorted(likes_ids_list, key=lambda x: x.get('like'), reverse=True)
-    except AttributeError:
+    else:
         return likes_ids_list
 
 

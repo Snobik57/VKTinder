@@ -53,7 +53,6 @@ class DbVkTinder:
         self.session.add(new_user)
         self.session.commit()
 
-
         return True
 
     def user_in_db(self, id_vk: str) -> bool:
@@ -64,12 +63,10 @@ class DbVkTinder:
         :return: bool - True если данный id_vk найдет в таблице Users
                         False если данный id_vk не найден в таблице Users
         """
-        q = self.session.query(Users).filter(Users.id_vk == id_vk)
-        result = False
-        for res in q.all():
-            result = True
-            break
-        return result
+        q = self.session.query(Users).filter(Users.id_vk == id_vk).all()
+        if q:
+            return True
+        return False
 
     def get_id_user(self, id_vk: str) -> int:
         """
@@ -79,13 +76,9 @@ class DbVkTinder:
         :return: int - Если данный ID пользователя обнаружен в БД
                  None - Если данный ID пользователя не обнаружен в БД
         """
-        q = self.session.query(Users).filter(Users.id_vk == id_vk)
-        result = None
-        for res in q.all():
-            result = res.id
-            break
-
-        return result
+        q = self.session.query(Users).filter(Users.id_vk == id_vk).all()
+        if q:
+            return q[0].id
 
     def get_age_user(self, id_vk: str) -> str:
         """
@@ -95,13 +88,10 @@ class DbVkTinder:
         :return: str - Если данный ID пользователя обнаружен в БД
                  None - Если данный ID пользователя не обнаружен в БД
         """
-        q = self.session.query(Users).filter(Users.id_vk == id_vk)
-        result = None
-        for res in q.all():
-            result = res.age
-            break
+        q = self.session.query(Users).filter(Users.id_vk == id_vk).all()
+        if q:
+            return q[0].id
 
-        return result
 
     def add_new_variants(self, user_id_vk: str, status="INERT", **kwargs) -> bool:
         """
@@ -215,13 +205,11 @@ class DbVkTinder:
         """
         q = self.session.query(Users).join(UsersVariants.user) \
             .join(Variants, UsersVariants.id_variant == Variants.id).filter(Users.id_vk == id_vk)\
-            .filter(Variants.id_vk == id_vk_variant)
+            .filter(Variants.id_vk == id_vk_variant).all()
 
-        result = False
-        for res in q.all():
-            result = True
-
-        return result
+        if q:
+            return True
+        return False
 
     def close(self) -> None:
         """
